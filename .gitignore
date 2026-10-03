@@ -1,0 +1,19 @@
+# Local runtime and deployment state
+secrets/
+backups/
+logs/
+mariadb-data/
+data/
+vmaps/
+Buildings/
+downloads/
+client-live-*.png
+
+# Local binaries and generated package content
+server/*.exe
+bridge/*.exe
+*.pem
+*.key
+*.pfx
+install-state.json
+SHA256.json
