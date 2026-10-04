@@ -1,5 +1,11 @@
 # Changelog
 
+## 2026-10-04 — Correct local client login autofill
+
+- Added a targeted, window-only login helper for the prepared ForeverLocal client.
+- The helper reads the ignored local credential file and pastes `admin@local.test` exactly, avoiding the prior `ADMIN` truncation at the `@` character.
+- The password remains outside Git and is never written to launcher logs.
+
 ## 2026-10-04 — `fix/bnet-tls-proxy`
 
 ### Recorded and synchronized

@@ -199,3 +199,11 @@ cmake -S tests -B tests/build -G "Visual Studio 17 2022" -A x64
 cmake --build tests/build --config Debug
 ctest --test-dir tests/build -C Debug --output-on-failure
 ```
+## Local client login
+
+The prepared client starter now uses `tools/AutoLogin-AnoWoW.ps1` with the
+ignored local file `client-login.local.json`. The verified local account is
+`admin@local.test`; the helper uses the client window's own bounds and clipboard
+paste so the full email reaches BNet. It does not capture the desktop or log the
+password. The 2026-10-04 live check reached `VerifyAuthToken`, `LogonComplete`,
+realm-list, and realm-join successfully.

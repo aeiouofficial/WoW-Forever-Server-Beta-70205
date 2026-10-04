@@ -17,6 +17,8 @@ $armedFile = Join-Path $logRoot "client-world-auth-$stamp-$correlationId.armed"
 $helperStdout = Join-Path $logRoot "client-world-auth-$stamp-$correlationId.stdout.log"
 $helperStderr = Join-Path $logRoot "client-world-auth-$stamp-$correlationId.stderr.log"
 $eventLog = Join-Path $logRoot 'client-launcher.log'
+$credentialsPath = Join-Path $serverRoot 'client-login.local.json'
+$autoLoginScript = Join-Path $PSScriptRoot 'AutoLogin-AnoWoW.ps1'
 
 function Write-LaunchEvent {
     param(
@@ -40,7 +42,7 @@ function Write-LaunchEvent {
 }
 
 try {
-    foreach ($path in @($localClient, $python, $helper)) {
+    foreach ($path in @($localClient, $python, $helper, $autoLoginScript, $credentialsPath)) {
         if (-not (Test-Path -LiteralPath $path -PathType Leaf)) {
             throw "Required client-launch component is missing: $path"
         }
@@ -90,6 +92,10 @@ try {
         throw "The ForeverLocal client exited before the world-auth helper could attach (pid $($clientProcess.Id))."
     }
 
+    $autoLoginOutput = Join-Path $logRoot "client-autologin-$stamp-$correlationId.log"
+    $autoLoginArgs = '-NoProfile -ExecutionPolicy Bypass -File "{0}" -ClientPid {1} -CredentialsPath "{2}"' -f $autoLoginScript, $clientProcess.Id, $credentialsPath
+    $autoLoginProcess = Start-Process -FilePath 'powershell.exe' -ArgumentList $autoLoginArgs -WindowStyle Hidden -RedirectStandardOutput $autoLoginOutput -RedirectStandardError ($autoLoginOutput + '.err') -PassThru
+
     $helperArguments = '"{0}" --client-sha256 {1} --build 70205 --local-client "{2}" --pid {3} --output "{4}" --armed-file "{5}" --scan-seconds 0.1 --scan-workers 4' -f `
         $helper, $clientSha256, $localClient, $clientProcess.Id, $helperOutput, $armedFile
     $helperProcess = Start-Process -FilePath $python -ArgumentList $helperArguments -WorkingDirectory (Split-Path -Parent $helper) -WindowStyle Hidden -RedirectStandardOutput $helperStdout -RedirectStandardError $helperStderr -PassThru
@@ -117,6 +123,8 @@ try {
         armedFile = $armedFile
         helperStdout = $helperStdout
         helperStderr = $helperStderr
+        autoLoginPid = $autoLoginProcess.Id
+        autoLoginOutput = $autoLoginOutput
         hostsRepair = 'optional; starter reports when not elevated'
     }
     Write-Output "CLIENT_PID=$($clientProcess.Id)"
@@ -128,6 +136,7 @@ try {
 catch {
     if ($clientProcess) { Stop-Process -Id $clientProcess.Id -Force -ErrorAction SilentlyContinue }
     if ($helperProcess) { Stop-Process -Id $helperProcess.Id -Force -ErrorAction SilentlyContinue }
+    if ($autoLoginProcess) { Stop-Process -Id $autoLoginProcess.Id -Force -ErrorAction SilentlyContinue }
     try {
         Write-LaunchEvent -Result 'failed' -Severity 'Critical' -Message $_.Exception.Message -Details @{
             clientPath = $localClient

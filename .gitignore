@@ -1,5 +1,6 @@
 # Local runtime and deployment state
 secrets/
+client-login.local.json
 backups/
 logs/
 mariadb-data/
