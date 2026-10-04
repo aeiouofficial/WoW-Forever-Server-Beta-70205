@@ -3,7 +3,7 @@
 ## 2026-10-04 — Rollback checkpoint for verified login/world entry
 
 - Created the private snapshot
-  `C:\Users\BigBr\AnoCore-Server-backups\working-login-enter-20261004-195637`.
+  `D:\AnoCore-Server\backups\working-login-enter-20261004-195637`.
 - Snapshot includes the runtime world/BNet binaries and configs, TLS bridge,
   launcher files, credentials file, and transactional dumps of auth,
   characters, world and hotfix databases.

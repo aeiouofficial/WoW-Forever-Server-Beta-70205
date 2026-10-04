@@ -215,7 +215,7 @@ working because it has previously truncated or mistimed the email field.
 Before further gameplay work, the known-good manual-login/world-entry state was
 backed up at:
 
-`C:\Users\BigBr\AnoCore-Server-backups\working-login-enter-20261004-195637`
+`D:\AnoCore-Server\backups\working-login-enter-20261004-195637`
 
 `SNAPSHOT-MANIFEST.txt` contains SHA-256 hashes for the copied runtime binaries,
 configs, TLS bridge files, launcher files and four transactional database dumps.
