@@ -60,10 +60,12 @@ Validation:
 - Launcher PowerShell parse: exit 0.
 - Runtime deployment SHA256:
   `E879B69D103A12A28112D3A7CA426B9BC1E16F73CDBCE5361340E01785FF8E88`
-  for the live-tested scale-fix build. Latest source build also guards socket
+  for the live-tested scale-fix build. Latest deployed source build also guards socket
   close cancellation with a mutex and moves normalization warnings to the
   startup logger; hash
   `6D4E455DF50F8F9749DA497679DE083CBC11ED08C98CAE4B9466C8C381A50189`.
+  This final build was installed after the active client exited; runtime and
+  build hashes matched. Its new startup still needs the live interaction gate.
 - Fresh live login: authenticated account, configured 5000 ms scheduling,
   region group 8, `CMSG_ENTER_ENCRYPTED_MODE_ACK`, then `CMSG_ENUM_CHARACTERS`.
 - Desktop screenshot confirms the actual character-creation UI (not an error
@@ -129,6 +131,19 @@ string interface number, and missing interface fallback. The tests execute
 the full real module under Lua 5.1 with controlled WoW API boundaries.
 Reproduce with `lua tests/TestAddonVersions.lua addon-fixes/Versions.lua`.
 Actual in-game `/reload` and full bridge telemetry remain unverified.
+
+## NPC menu migration
+
+The imported DB retained menu IDs in `creature_template.gossip_menu_id`, but
+the current loader only reads `creature_template_gossip`, which was empty.
+`sql/2026_10_04_legacy_creature_gossip.sql` copies only legacy menu IDs that
+exist in `gossip_menu`, preserves existing mappings and is idempotent.
+The old target table was dumped to a workspace-local backup before mutation.
+First application inserted 1805 mappings; second application inserted 0.
+`tools/Test-ForeverGossipMappings.ps1`: exit 0, missingMappings=0.
+This repairs a proven data omission; it does not establish that the separate
+70205 packet-layout/interaction problem is solved. Live quest acceptance,
+completion and vendor purchases remain unverified.
 
 Reproduce the isolated regression tests:
 
