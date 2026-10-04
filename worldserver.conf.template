@@ -1802,6 +1802,15 @@ Rate.Creature.Elite.RARE.Damage      = 1
 Rate.Creature.Elite.RAREELITE.Damage = 1
 Rate.Creature.Elite.WORLDBOSS.Damage = 1
 
+# Forever 1.60 core key names (kept alongside legacy template names).
+Rate.Creature.Damage.Normal = 1
+Rate.Creature.Damage.Elite = 1
+Rate.Creature.Damage.RareElite = 1
+Rate.Creature.Damage.Obsolete = 1
+Rate.Creature.Damage.Rare = 1
+Rate.Creature.Damage.Trivial = 1
+Rate.Creature.Damage.MinusMob = 1
+
 #
 #    Rate.Creature.Normal.SpellDamage
 #    Rate.Creature.Elite.Elite.SpellDamage
@@ -1820,6 +1829,14 @@ Rate.Creature.Elite.Elite.SpellDamage     = 1
 Rate.Creature.Elite.RARE.SpellDamage      = 1
 Rate.Creature.Elite.RAREELITE.SpellDamage = 1
 Rate.Creature.Elite.WORLDBOSS.SpellDamage = 1
+
+Rate.Creature.SpellDamage.Normal = 1
+Rate.Creature.SpellDamage.Elite = 1
+Rate.Creature.SpellDamage.RareElite = 1
+Rate.Creature.SpellDamage.Obsolete = 1
+Rate.Creature.SpellDamage.Rare = 1
+Rate.Creature.SpellDamage.Trivial = 1
+Rate.Creature.SpellDamage.MinusMob = 1
 
 #
 #    Rate.Creature.Normal.HP

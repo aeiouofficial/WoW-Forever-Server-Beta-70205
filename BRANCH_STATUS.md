@@ -175,11 +175,16 @@ query and selection packets, but no `CMSG_TALK_TO_GOSSIP`,
 The server therefore has not yet received an interaction request to handle;
 quest/vendor database rows alone cannot prove the UI path works.
 
-The same startup log reports `Loaded 0 classic creature levels` because
-`creature_classic_level` is empty. The current core consequently falls back to
-retail DB2 expected creature health/damage for those spawns. This is a separate
-confirmed compatibility gap behind the reported one-hit combat symptom; it
-must be repaired and live-tested before gameplay acceptance.
+The startup log previously reported `Loaded 0 classic creature levels` because
+`creature_classic_level` was empty. The idempotent migration
+`sql/2026_10_04_classic_creature_levels.sql` now inserted 10,650 mappings from
+the legacy template level ranges. After the worldserver restart the log reports
+`Loaded 10650 classic creature levels`; the wiring validator reports
+`missingClassicLevels=0`. This removes the confirmed retail expected-stat
+fallback behind the one-hit combat symptom. Actual multi-hit combat still needs
+an in-client acceptance run.
+
+The migration is idempotent: a second live application inserted 0 rows.
 
 This branch is intentionally not marked gameplay-complete or merge-ready:
 live quest-window opening, vendor inventory opening, a purchase, multi-hit

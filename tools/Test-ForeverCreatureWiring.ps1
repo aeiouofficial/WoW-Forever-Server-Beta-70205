@@ -17,6 +17,10 @@ UNION ALL SELECT 'invalidHealthMultipliers',COUNT(*) FROM creature_template_diff
 UNION ALL SELECT 'missingVanillaLevelStats',COUNT(*) FROM creature_template ct
  WHERE ct.minlevel BETWEEN 1 AND 63 AND NOT EXISTS
  (SELECT 1 FROM creature_classlevelstats s WHERE s.level=ct.minlevel AND s.class=ct.unit_class AND s.basehp0>0)
+UNION ALL SELECT 'missingClassicLevels',COUNT(*) FROM creature_template ct
+ WHERE ct.minlevel BETWEEN 1 AND 63 AND ct.maxlevel BETWEEN ct.minlevel AND 63
+   AND NOT EXISTS
+   (SELECT 1 FROM creature_classic_level cl WHERE cl.entry=ct.entry)
 UNION ALL SELECT 'invalidVendorFlags',COUNT(*) FROM creature_template ct
  WHERE EXISTS(SELECT 1 FROM npc_vendor v WHERE v.entry=ct.entry) AND (ct.npcflag & 128)=0;
 '@
@@ -28,7 +32,7 @@ UNION ALL SELECT 'invalidVendorFlags',COUNT(*) FROM creature_template ct
         if ($columns.Count -ne 2 -or $columns[1] -notmatch '^\d+$') { throw 'Unexpected database check output' }
         $checks[$columns[0]] = [int]$columns[1]
     }
-    if ($checks.Count -ne 4) { throw 'Incomplete database checks' }
+    if ($checks.Count -ne 5) { throw 'Incomplete database checks' }
     $failed = @($checks.Values | Where-Object { $_ -ne 0 }).Count -gt 0
     [ordered]@{ check='creature-database-wiring'; checks=$checks; result=$(if($failed){'failed'}else{'passed'}) } | ConvertTo-Json -Depth 3 -Compress
     if ($failed) { exit 1 }
