@@ -1,5 +1,26 @@
 # Changelog
 
+## 2026-10-04 — Rollback checkpoint for verified login/world entry
+
+- Created the private snapshot
+  `C:\Users\BigBr\AnoCore-Server-backups\working-login-enter-20261004-195637`.
+- Snapshot includes the runtime world/BNet binaries and configs, TLS bridge,
+  launcher files, credentials file, and transactional dumps of auth,
+  characters, world and hotfix databases.
+- Recorded repository commit
+  `5543229453a08c7785fc422ba0269e2bf5586d98` in the snapshot manifest.
+- Manual login is the only verified path. Automatic login remains explicitly
+  unverified and is not described as fixed.
+- No gameplay source or runtime binary was deployed in this checkpoint.
+
+### Handoff boundary
+
+Verified: manual login, realm/ruleset selection, character enumeration, world
+entry and loading the world. Unverified: automatic login, quest windows and
+quest completion, gossip/NPC interactions, vendor inventory and purchases,
+multi-hit combat, and pathfinding. Continue from the rollback snapshot if a
+future gameplay experiment regresses login or world entry.
+
 ## 2026-10-04 — Correct local client login autofill
 
 - Added a targeted, window-only login helper for the prepared ForeverLocal client.

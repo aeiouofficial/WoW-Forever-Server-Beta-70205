@@ -205,5 +205,27 @@ The prepared client starter now uses `tools/AutoLogin-AnoWoW.ps1` with the
 ignored local file `client-login.local.json`. The verified local account is
 `admin@local.test`; the helper uses the client window's own bounds and clipboard
 paste so the full email reaches BNet. It does not capture the desktop or log the
-password. The 2026-10-04 live check reached `VerifyAuthToken`, `LogonComplete`,
-realm-list, and realm-join successfully.
+password. Manual entry is the only currently verified login path. The 2026-10-04
+live check reached `VerifyAuthToken`, `LogonComplete`, realm-list, realm-join,
+character enumeration and world entry; the automatic helper is not accepted as
+working because it has previously truncated or mistimed the email field.
+
+## Rollback checkpoint, 2026-10-04 19:56 CEST
+
+Before further gameplay work, the known-good manual-login/world-entry state was
+backed up at:
+
+`C:\Users\BigBr\AnoCore-Server-backups\working-login-enter-20261004-195637`
+
+`SNAPSHOT-MANIFEST.txt` contains SHA-256 hashes for the copied runtime binaries,
+configs, TLS bridge files, launcher files and four transactional database dumps.
+It also records repository commit `5543229453a08c7785fc422ba0269e2bf5586d98`.
+Restore the snapshot only after stopping the server processes; replace the
+runtime files, restore the four SQL dumps, then start the local server script.
+The snapshot is outside Git because it contains private credentials, certificates
+and mutable runtime/database state.
+
+The current repository remains intentionally unchanged for gameplay: quests,
+gossip/NPC interaction, vendor UI/purchases, combat multi-hit behavior and
+pathfinding are not verified. The uncommitted external source experiment was not
+deployed and is not part of this rollback checkpoint.
