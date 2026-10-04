@@ -1,0 +1,7 @@
+* text=auto
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.lua text eol=lf
+*.py text eol=lf
+*.template text eol=lf
+*.patch text eol=lf whitespace=-blank-at-eol

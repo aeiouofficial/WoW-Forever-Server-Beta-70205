@@ -1,0 +1,226 @@
+diff --git a/src/server/game/Events/GameEventMgr.cpp b/src/server/game/Events/GameEventMgr.cpp
+index fad4b52..295171c 100644
+--- a/src/server/game/Events/GameEventMgr.cpp
++++ b/src/server/game/Events/GameEventMgr.cpp
+@@ -411,7 +411,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 ObjectGuid::LowType guid = fields[0].GetUInt64();
+-                int16 event_id = fields[1].GetInt8();
++                int16 event_id = fields[1].GetInt16();
+ 
+                 int32 internal_event_id = mGameEvent.size() + event_id - 1;
+ 
+@@ -461,7 +461,7 @@ void GameEventMgr::LoadFromDB()
+                 Field* fields = result->Fetch();
+ 
+                 ObjectGuid::LowType guid = fields[0].GetUInt64();
+-                int16 event_id = fields[1].GetInt8();
++                int16 event_id = fields[1].GetInt16();
+ 
+                 int32 internal_event_id = mGameEvent.size() + event_id - 1;
+ 
+diff --git a/src/server/game/Globals/ObjectMgr.cpp b/src/server/game/Globals/ObjectMgr.cpp
+index edfb9fb..1da6945 100644
+--- a/src/server/game/Globals/ObjectMgr.cpp
++++ b/src/server/game/Globals/ObjectMgr.cpp
+@@ -24,6 +24,7 @@
+ #include "Chat.h"
+ #include "Containers.h"
+ #include "CreatureAIFactory.h"
++#include "CreatureScale.h"
+ #include "CriteriaHandler.h"
+ #include "DB2Stores.h"
+ #include "DatabaseEnv.h"
+@@ -379,13 +380,19 @@ void ObjectMgr::LoadCreatureTemplates()
+     }
+ 
+     _creatureTemplateStore.reserve(result->GetRowCount());
++    uint32 normalizedScales = 0;
+     do
+     {
+         Field* fields = result->Fetch();
++        float rawScale = fields[14].GetFloat();
++        if (NormalizeCreatureScale(rawScale) != rawScale)
++            ++normalizedScales;
+         LoadCreatureTemplate(fields);
+     } while (result->NextRow());
+ 
+     LoadCreatureTemplateResistances();
++    if (normalizedScales)
++        TC_LOG_WARN("server.loading", "Normalized {} invalid creature_template.scale values to 1.0 while loading; database remains unchanged. Repair legacy scale data to remove this warning and prevent client model assertions.", normalizedScales);
+     LoadCreatureTemplateSpells();
+ 
+     // We load the creature models after loading but before checking
+@@ -419,7 +426,7 @@ void ObjectMgr::LoadCreatureTemplate(Field* fields)
+     creatureTemplate.npcflag                = fields[11].GetUInt64();
+     creatureTemplate.speed_walk             = fields[12].GetFloat();
+     creatureTemplate.speed_run              = fields[13].GetFloat();
+-    creatureTemplate.scale                  = fields[14].GetFloat();
++    creatureTemplate.scale                  = NormalizeCreatureScale(fields[14].GetFloat());
+     creatureTemplate.Classification         = CreatureClassifications(fields[15].GetUInt8());
+     creatureTemplate.dmgschool              = uint32(fields[16].GetInt8());
+     creatureTemplate.BaseAttackTime         = fields[17].GetUInt32();
+@@ -2209,7 +2216,7 @@ void ObjectMgr::LoadCreatures()
+         data.curHealthPct   = fields[12].GetUInt32OrNull();
+         data.movementType   = fields[13].GetUInt8();
+         data.spawnDifficulties = ParseSpawnDifficulties(fields[14].GetStringView(), "creature", guid, data.mapId, spawnMasks[data.mapId]);
+-        int16 gameEvent     = fields[15].GetInt8();
++        int16 gameEvent     = fields[15].GetInt16();
+         data.poolId         = fields[16].GetUInt32();
+         data.npcflag        = fields[17].GetUInt64OrNull();
+         data.unit_flags     = fields[18].GetUInt32OrNull();
+@@ -2637,7 +2644,7 @@ void ObjectMgr::LoadGameObjects()
+             continue;
+         }
+ 
+-        int16 gameEvent     = fields[15].GetInt8();
++        int16 gameEvent     = fields[15].GetInt16();
+         data.poolId         = fields[16].GetUInt32();
+         data.phaseUseFlags  = fields[17].GetUInt8();
+         data.phaseId        = fields[18].GetUInt32();
+diff --git a/src/server/game/Server/WorldSocket.cpp b/src/server/game/Server/WorldSocket.cpp
+index c8ec18f..9749c79 100644
+--- a/src/server/game/Server/WorldSocket.cpp
++++ b/src/server/game/Server/WorldSocket.cpp
+@@ -242,6 +242,9 @@ bool WorldSocket::Update()
+ 
+     _queryProcessor.ProcessReadyCallbacks();
+ 
++    if (IsOpen() && _encryptedModeDeadline.Consume())
++        SendEnterEncryptedMode();
++
+     return true;
+ }
+ 
+@@ -259,6 +262,7 @@ void WorldSocket::SendAuthSession()
+ 
+ void WorldSocket::OnClose()
+ {
++    _encryptedModeDeadline.Cancel();
+     {
+         std::scoped_lock sessionGuard(_worldSessionLock);
+         _worldSession = nullptr;
+@@ -907,9 +911,28 @@ void WorldSocket::LoadSessionPermissionsCallback(PreparedQueryResult result)
+     // RBAC must be loaded before adding session to check for skip queue permission
+     _worldSession->GetRBACData()->LoadFromDBCallback(std::move(result));
+ 
++    ScheduleEnterEncryptedMode();
++}
++
++void WorldSocket::ScheduleEnterEncryptedMode()
++{
++    int32 delay = sConfigMgr->GetIntDefault("Forever.EncryptedModeDelayMs", 0);
++    if (delay < 0 || delay > 10000)
++    {
++        TC_LOG_ERROR("network", "Invalid Forever.EncryptedModeDelayMs {}; expected 0..10000. Using zero delay.", delay);
++        delay = 0;
++    }
++    TC_LOG_INFO("network", "Scheduling EnterEncryptedMode for {} connection type {} in {} ms.", GetRemoteIpAddress(), uint32(_type), delay);
++    _encryptedModeDeadline.Arm(std::chrono::milliseconds(delay));
++}
++
++void WorldSocket::SendEnterEncryptedMode()
++{
++
+     WorldPackets::Auth::EnterEncryptedMode enterEncryptedMode(_encryptKey, true);
+     // Classic (1.60+) clients pick the Ed25519 public key used to verify this packet by RegionGroup
+-    enterEncryptedMode.RegionGroup = sConfigMgr->GetIntDefault("Network.EnterEncryptedModeRegionGroup", 0);
++    enterEncryptedMode.RegionGroup = sConfigMgr->GetIntDefault("Network.EnterEncryptedModeRegionGroup", 8);
++    TC_LOG_INFO("network", "Sending EnterEncryptedMode for {} with region group {}.", GetRemoteIpAddress(), enterEncryptedMode.RegionGroup);
+     SendPacketAndLogOpcode(*enterEncryptedMode.Write());
+ }
+ 
+@@ -993,10 +1016,7 @@ void WorldSocket::HandleAuthContinuedSessionCallback(WorldPackets::Auth::AuthCon
+     // only first 32 bytes of the hmac are used
+     memcpy(_encryptKey.data(), encryptKeyGen.GetDigest().data(), 32);
+ 
+-    WorldPackets::Auth::EnterEncryptedMode enterEncryptedMode(_encryptKey, true);
+-    // Classic (1.60+) clients pick the Ed25519 public key used to verify this packet by RegionGroup
+-    enterEncryptedMode.RegionGroup = sConfigMgr->GetIntDefault("Network.EnterEncryptedModeRegionGroup", 0);
+-    SendPacketAndLogOpcode(*enterEncryptedMode.Write());
++    ScheduleEnterEncryptedMode();
+     AsyncRead(Trinity::Net::InvokeReadHandlerCallback<WorldSocket>{ .Socket = this });
+ }
+ 
+diff --git a/src/server/game/Server/WorldSocket.h b/src/server/game/Server/WorldSocket.h
+index 6f18ef4..cb55c15 100644
+--- a/src/server/game/Server/WorldSocket.h
++++ b/src/server/game/Server/WorldSocket.h
+@@ -21,6 +21,7 @@
+ #include "AsyncCallbackProcessor.h"
+ #include "AuthDefines.h"
+ #include "DatabaseEnvFwd.h"
++#include "DeferredHandshake.h"
+ #include "MPSCQueue.h"
+ #include "MessageBuffer.h"
+ #include "Socket.h"
+@@ -136,6 +137,8 @@ private:
+     void LogOpcodeText(OpcodeClient opcode, std::scoped_lock<std::mutex> const& guard) const;
+     /// sends and logs network.opcode without accessing WorldSession
+     void SendPacketAndLogOpcode(WorldPacket const& packet);
++    void ScheduleEnterEncryptedMode();
++    void SendEnterEncryptedMode();
+     void WritePacketToBuffer(EncryptablePacket const& packet, MessageBuffer& buffer);
+     uint32 CompressPacket(uint8* buffer, WorldPacket const& packet);
+ 
+@@ -157,6 +160,7 @@ private:
+     WorldPacketCrypt _authCrypt;
+     SessionKey _sessionKey;
+     std::array<uint8, 32> _encryptKey;
++    DeferredHandshake _encryptedModeDeadline;
+ 
+     TimePoint _lastPingTime;
+     uint32 _overSpeedPings;
+diff --git a/src/server/game/Server/DeferredHandshake.h b/src/server/game/Server/DeferredHandshake.h
+new file mode 100644
+--- /dev/null
++++ b/src/server/game/Server/DeferredHandshake.h
+@@ -0,0 +1,31 @@
++#ifndef TRINITYCORE_DEFERRED_HANDSHAKE_H
++#define TRINITYCORE_DEFERRED_HANDSHAKE_H
++
++#include <chrono>
++#include <optional>
++#include <mutex>
++
++// Deadline is consumed by the socket update thread; close can cancel elsewhere.
++class DeferredHandshake
++{
++public:
++    using Clock = std::chrono::steady_clock;
++    void Arm(std::chrono::milliseconds delay, Clock::time_point now = Clock::now())
++    {
++        std::scoped_lock lock(_mutex);
++        _deadline = now + delay;
++    }
++    void Cancel() { std::scoped_lock lock(_mutex); _deadline.reset(); }
++    bool Consume(Clock::time_point now = Clock::now())
++    {
++        std::scoped_lock lock(_mutex);
++        if (!_deadline || now < *_deadline)
++            return false;
++        _deadline.reset();
++        return true;
++    }
++private:
++    std::mutex _mutex;
++    std::optional<Clock::time_point> _deadline;
++};
++#endif
+diff --git a/src/server/game/Globals/CreatureScale.h b/src/server/game/Globals/CreatureScale.h
+new file mode 100644
+--- /dev/null
++++ b/src/server/game/Globals/CreatureScale.h
+@@ -0,0 +1,11 @@
++#ifndef TRINITYCORE_CREATURE_SCALE_H
++#define TRINITYCORE_CREATURE_SCALE_H
++#include <cmath>
++#include <limits>
++
++// Older world databases use zero for default scale; modern clients reject it.
++inline float NormalizeCreatureScale(float scale)
++{
++    return std::isfinite(scale) && scale > std::numeric_limits<float>::epsilon() ? scale : 1.0f;
++}
++#endif

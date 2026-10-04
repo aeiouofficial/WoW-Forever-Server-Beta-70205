@@ -17,3 +17,7 @@ bridge/*.exe
 *.pfx
 install-state.json
 SHA256.json
+tests/build/
+tests/vendor/
+tests/lua/build/
+__pycache__/
