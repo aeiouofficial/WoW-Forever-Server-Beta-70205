@@ -20,6 +20,12 @@ Validation performed locally:
 - `tools/Test-AnoWoWLauncher.ps1`: exit `0`
 - PowerShell parse check for `Start-ForeverServer.ps1`: passed
 - listeners `1119`, `1120`, `8081`, `8082`, `8085`: active
+- local bootstrap start: exit `0`; client and world-auth helper started
+
+The local no-state bootstrap is intentionally independent of
+`secrets\install-state.json`. It reuses listeners that are already active and
+waits for the Worldserver listener, preventing duplicate starts and the
+resulting `Could not bind ... 8085` failure.
 
 The complete client login to realm selection is still a separate acceptance
 test and is not claimed by this branch.
