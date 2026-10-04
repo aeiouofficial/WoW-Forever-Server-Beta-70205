@@ -5,6 +5,14 @@ local DataToColor = unpack(Load)
 local GetBuildInfo = GetBuildInfo
 local GetAddOnMetadata = GetAddOnMetadata or (C_AddOns and C_AddOns.GetAddOnMetadata)
 
+-- Keep removed globals behind the same version adapter used by all consumers.
+DataToColor.GetItemInfo = GetItemInfo or (C_Item and C_Item.GetItemInfo)
+DataToColor.GetItemSpell = GetItemSpell or (C_Item and C_Item.GetItemSpell)
+DataToColor.GetSpellBaseCooldown = GetSpellBaseCooldown or (C_Spell and C_Spell.GetSpellBaseCooldown)
+function DataToColor.GetAddonVersion()
+  return assert(GetAddOnMetadata(addonName, "Version"), "Missing Version metadata for " .. addonName)
+end
+
 local UnitIsUnit = UnitIsUnit
 local UnitLevel = UnitLevel
 

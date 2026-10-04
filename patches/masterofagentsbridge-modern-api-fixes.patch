@@ -1,0 +1,134 @@
+diff --git a/Addons/MasterOfAgentsBridge/EventHandlers.lua b/Addons/MasterOfAgentsBridge/EventHandlers.lua
+index aceb70e4..cdfe75b7 100644
+--- a/Addons/MasterOfAgentsBridge/EventHandlers.lua
++++ b/Addons/MasterOfAgentsBridge/EventHandlers.lua
+@@ -8,7 +8,7 @@ local UIErrorsFrame = UIErrorsFrame
+ local CombatLogGetCurrentEventInfo = CombatLogGetCurrentEventInfo
+ local GetSpellInfo = DataToColor.GetSpellInfo
+ local GetSpellCastTime = DataToColor.GetSpellCastTime
+-local GetSpellBaseCooldown = GetSpellBaseCooldown
++local GetSpellBaseCooldown = DataToColor.GetSpellBaseCooldown
+ local GetTime = GetTime
+ local GetGossipOptions = DataToColor.GetGossipOptions
+ local HasAction = HasAction
+@@ -306,7 +306,7 @@ end
+ function DataToColor:OnPlayerLogin()
+     DataToColor:InitializeErrorLists()
+ 
+-    local version = GetAddOnMetadata('DataToColor', 'Version')
++    local version = DataToColor.GetAddonVersion()
+     DataToColor:Print("Welcome. Using " .. version)
+ 
+     -- Unregister to avoid being called again
+diff --git a/Addons/MasterOfAgentsBridge/Mail.lua b/Addons/MasterOfAgentsBridge/Mail.lua
+index de37b247..b71e8f12 100644
+--- a/Addons/MasterOfAgentsBridge/Mail.lua
++++ b/Addons/MasterOfAgentsBridge/Mail.lua
+@@ -35,7 +35,7 @@ local PickupContainerItem = DataToColor.PickupContainerItem
+ local GetNumFriends = DataToColor.GetNumFriends
+ local GetFriendInfo = DataToColor.GetFriendInfo
+ 
+-local GetItemInfo = GetItemInfo
++local GetItemInfo = DataToColor.GetItemInfo
+ local GetMoney = GetMoney
+ local SendMail = SendMail
+ local SetSendMailMoney = SetSendMailMoney
+@@ -492,4 +492,4 @@ function DataToColor:StartMailSending(recipient, minGoldToKeep, minQuality, excl
+         mState = STATE_SCANNING
+         Tick()
+     end
+-end
+\ No newline at end of file
++end
+diff --git a/Addons/MasterOfAgentsBridge/MasterOfAgentsBridge.lua b/Addons/MasterOfAgentsBridge/MasterOfAgentsBridge.lua
+index f12b8029..7df23667 100644
+--- a/Addons/MasterOfAgentsBridge/MasterOfAgentsBridge.lua
++++ b/Addons/MasterOfAgentsBridge/MasterOfAgentsBridge.lua
+@@ -124,7 +124,7 @@ local PickupContainerItem = DataToColor.PickupContainerItem
+ local GetInventoryItemLink = GetInventoryItemLink
+ local DeleteCursorItem = DeleteCursorItem
+ local GetMerchantItemLink = GetMerchantItemLink
+-local GetItemInfo = GetItemInfo
++local GetItemInfo = DataToColor.GetItemInfo
+ local GetCoinTextureString = GetCoinTextureString
+ local UseContainerItem = DataToColor.UseContainerItem
+ 
+@@ -440,7 +440,7 @@ function DataToColor:OnInitialize()
+ end
+ 
+ function DataToColor:OnEnteringWorld()
+-    local version = GetAddOnMetadata('DataToColor', 'Version')
++    local version = DataToColor.GetAddonVersion()
+     DataToColor:Print("Welcome. Using " .. version)
+     DataToColor:InitializeErrorLists()
+ 
+diff --git a/Addons/MasterOfAgentsBridge/Query.lua b/Addons/MasterOfAgentsBridge/Query.lua
+index 7a2ce055..a010d5ed 100644
+--- a/Addons/MasterOfAgentsBridge/Query.lua
++++ b/Addons/MasterOfAgentsBridge/Query.lua
+@@ -30,7 +30,8 @@ local GetActionInfo = DataToColor.SafeGetActionInfo
+ local GetMacroSpell = GetMacroSpell
+ local GetSpellPowerCost = DataToColor.GetSpellPowerCost
+ local GetSpellCastTime = DataToColor.GetSpellCastTime
+-local GetSpellBaseCooldown = GetSpellBaseCooldown
++local GetSpellBaseCooldown = DataToColor.GetSpellBaseCooldown
++local GetItemSpell = DataToColor.GetItemSpell
+ local GetInventoryItemLink = GetInventoryItemLink
+ local IsSpellInRange = DataToColor.SafeIsSpellInRange
+ local GetSpellInfo = DataToColor.GetSpellInfo
+@@ -1188,4 +1189,4 @@ function DataToColor:MiniMapSettings2()
+         band(offsetRight, 0xFFF),
+         bit.lshift(band(offsetTop, 0xFFF), 12)
+     )
+-end
+\ No newline at end of file
++end
+diff --git a/Addons/MasterOfAgentsBridge/SellJunk.lua b/Addons/MasterOfAgentsBridge/SellJunk.lua
+index cd0949cf..561153fb 100644
+--- a/Addons/MasterOfAgentsBridge/SellJunk.lua
++++ b/Addons/MasterOfAgentsBridge/SellJunk.lua
+@@ -15,7 +15,7 @@ local UseContainerItem = DataToColor.UseContainerItem
+ local GetContainerItemInfo = DataToColor.GetContainerItemInfo
+ local GetContainerNumSlots = DataToColor.GetContainerNumSlots
+ local GetContainerItemLink = DataToColor.GetContainerItemLink
+-local GetItemInfo = GetItemInfo
++local GetItemInfo = DataToColor.GetItemInfo
+ local GetCoinTextureString = GetCoinTextureString
+ 
+ local MERCHANT_SELLING = 9999997
+diff --git a/Addons/MasterOfAgentsBridge/Versions.lua b/Addons/MasterOfAgentsBridge/Versions.lua
+index 90b4cc98..5437290a 100644
+--- a/Addons/MasterOfAgentsBridge/Versions.lua
++++ b/Addons/MasterOfAgentsBridge/Versions.lua
+@@ -5,6 +5,14 @@ local DataToColor = unpack(Load)
+ local GetBuildInfo = GetBuildInfo
+ local GetAddOnMetadata = GetAddOnMetadata or (C_AddOns and C_AddOns.GetAddOnMetadata)
+ 
++-- Keep removed globals behind the same version adapter used by all consumers.
++DataToColor.GetItemInfo = GetItemInfo or (C_Item and C_Item.GetItemInfo)
++DataToColor.GetItemSpell = GetItemSpell or (C_Item and C_Item.GetItemSpell)
++DataToColor.GetSpellBaseCooldown = GetSpellBaseCooldown or (C_Spell and C_Spell.GetSpellBaseCooldown)
++function DataToColor.GetAddonVersion()
++  return assert(GetAddOnMetadata(addonName, "Version"), "Missing Version metadata for " .. addonName)
++end
++
+ local UnitIsUnit = UnitIsUnit
+ local UnitLevel = UnitLevel
+ 
+@@ -34,7 +42,8 @@ local WOW_PROJECT_WRATH_CLASSIC = WOW_PROJECT_WRATH_CLASSIC
+ local WOW_PROJECT_CATACLYSM_CLASSIC = WOW_PROJECT_CATACLYSM_CLASSIC
+ local WOW_PROJECT_MAINLINE = WOW_PROJECT_MAINLINE
+ 
+-local buildVersion = tonumber(select(4, GetBuildInfo())) or 0
++-- select returns every trailing value; only the interface number belongs here.
++local buildVersion = tonumber((select(4, GetBuildInfo()))) or 0
+ local addonGameType = GetAddOnMetadata and GetAddOnMetadata(addonName, "X-MasterOfAgents-GameType") or nil
+ local isMainlineFamily = addonGameType == "standard" or addonGameType == "camelot" or addonGameType == "mainline"
+ if addonGameType == nil and WOW_PROJECT_MAINLINE ~= nil and WOW_PROJECT_ID == WOW_PROJECT_MAINLINE then
+@@ -958,4 +967,4 @@ function DataToColor:SafeRegisterEvent(eventName, handler)
+         return true
+     end
+     return false
+-end
+\ No newline at end of file
++end

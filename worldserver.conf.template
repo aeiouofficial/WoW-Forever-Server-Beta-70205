@@ -3182,7 +3182,7 @@ Network.TcpNodelay = 1
 Network.EnterEncryptedModeRegionGroup = 8
 # Local certificate helper needs time to update the private verifier key copies.
 # Requires patches/forever-runtime-fixes.patch; upstream ignores this setting.
-Forever.EncryptedModeDelayMs = 5000
+Forever.EncryptedModeDelayMs = 10000
 
 #
 ###################################################################################################
