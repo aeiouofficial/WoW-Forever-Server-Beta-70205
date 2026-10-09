@@ -58,4 +58,11 @@ Before this change, files were backed up to `backups\startup-stack-hardening-202
 
 ## Local-only validation performed on 2026-10-09
 
-A running system reported all seven expected listeners bound by the intended executables, with MariaDB confirmed via Windows service PID (the service process does not expose its executable path to all sessions). Final watchdog recovery test status must be recorded separately from this basic readiness evidence.
+A running system reported all seven expected listeners bound by the intended executables, with MariaDB confirmed via Windows service PID (the service process does not expose its executable path to all sessions). **Fault-injection PASS (2026-10-09):** The dedicated local CRL service (PID 29964) was deliberately terminated after confirming that it belonged to the workspace Python HTTP server. The watchdog remained running as exactly one process at a 30-second interval. Evidence in `logs\stack-supervisor.jsonl`:
+- 20:35:18 UTC: watchdog started (`traceId=418892b23e4a4bb5a380e847e23deb86`).
+- 20:36:25 UTC: loss of one listener detected (`degraded`).
+- 20:36:32 UTC: CRL endpoint restart initiated.
+- 20:36:33 UTC: CRL port 8087 reopened.
+- 20:36:53 UTC: complete 7/7 stack restored (`recovered`), with MariaDB, Battle.net, worldserver and TLS bridge retained.
+
+**GitHub sync PASS:** `e61713bf78556ffb948371beca3456465bcba9e4` fetched to `D:\AnoCore-Server\git-sync` and compared against the live workspace: nine versioned deployment and operations files MATCH (normalized line endings); working tree clean. The first-attempt client autologin and full NPC UI are independent, unresolved gameplay checks.
